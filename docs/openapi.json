@@ -1,0 +1,414 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Check-in local",
+    "version": "0.2.0",
+    "description": "Recepción y validación local. Sin autenticación para esta entrega. Valida existencia y evento; no comprueba anulaciones, horarios ni uso previo y no registra asistencia. Entradas debe enviar solamente tickets emitidos válidos."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "paths": {
+    "/api/v1/checkin/tickets": {
+      "post": {
+        "summary": "Recibir y guardar un ticket desde Entradas",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id_entrada",
+                  "id_evento",
+                  "nombre_usuario"
+                ],
+                "properties": {
+                  "id_entrada": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "example": "tk-998877"
+                  },
+                  "id_evento": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "example": "evt-77889"
+                  },
+                  "nombre_usuario": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "example": "Sebastián Fuentes"
+                  },
+                  "qr_data": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "description": "Opcional; debe ser igual a id_entrada. No es una URL de imagen."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Ticket registrado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "mensaje"
+                  ],
+                  "properties": {
+                    "mensaje": {
+                      "type": "string",
+                      "example": "Ticket registrado exitosamente para control de acceso."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos o JSON malformado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "TICKET_ALREADY_EXISTS: el ID ya está registrado; no se modifica",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Cuerpo mayor que 16 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno o de base de datos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/checkin/validaciones": {
+      "post": {
+        "summary": "Validar ID leído del QR contra la base local",
+        "description": "200 con valido=false para ticket desconocido o de otro evento. No modifica el ticket. Los datos del usuario solo se devuelven si coincide el evento.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id_entrada",
+                  "id_evento"
+                ],
+                "properties": {
+                  "id_entrada": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "example": "tk-998877"
+                  },
+                  "id_evento": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "example": "evt-77889"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resultado de validación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "valido",
+                        "motivo",
+                        "ticket"
+                      ],
+                      "properties": {
+                        "valido": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        },
+                        "motivo": {
+                          "type": "string",
+                          "enum": [
+                            "TICKET_FOUND"
+                          ]
+                        },
+                        "ticket": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "id_entrada",
+                            "id_evento",
+                            "nombre_usuario"
+                          ],
+                          "properties": {
+                            "id_entrada": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "example": "tk-998877"
+                            },
+                            "id_evento": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "example": "evt-77889"
+                            },
+                            "nombre_usuario": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200,
+                              "example": "Sebastián Fuentes"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "valido",
+                        "motivo"
+                      ],
+                      "properties": {
+                        "valido": {
+                          "type": "boolean",
+                          "enum": [
+                            false
+                          ]
+                        },
+                        "motivo": {
+                          "type": "string",
+                          "enum": [
+                            "TICKET_NOT_FOUND",
+                            "EVENT_MISMATCH"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos o JSON malformado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Cuerpo mayor que 16 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error interno o de base de datos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

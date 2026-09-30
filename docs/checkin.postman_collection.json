@@ -1,0 +1,140 @@
+{
+  "info": {
+    "name": "Check-in local — registro y validación",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Ejecutar en orden. Genera un ID nuevo al registrar para repetir la colección sin borrar la BD."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "ticketId",
+      "value": "tk-demo"
+    }
+  ],
+  "item": [
+    {
+      "name": "Registrar ticket",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/checkin/tickets",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_entrada\": \"{{ticketId}}\",\n  \"id_evento\": \"evt-77889\",\n  \"nombre_usuario\": \"Sebastián Fuentes\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('ticketId', pm.variables.replaceIn('{{$guid}}'));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Registrar ticket', () => { pm.response.to.have.status(201);  });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Validar ticket",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/checkin/validaciones",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_entrada\": \"{{ticketId}}\",\n  \"id_evento\": \"evt-77889\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Validar ticket', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().valido).to.eql(true); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rechazar otro evento",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/checkin/validaciones",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_entrada\": \"{{ticketId}}\",\n  \"id_evento\": \"otro\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Rechazar otro evento', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().motivo).to.eql('EVENT_MISMATCH'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rechazar duplicado",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/checkin/tickets",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_entrada\": \"{{ticketId}}\",\n  \"id_evento\": \"evt-77889\",\n  \"nombre_usuario\": \"Sebastián Fuentes\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Rechazar duplicado', () => { pm.response.to.have.status(409); pm.expect(pm.response.json().error.code).to.eql('TICKET_ALREADY_EXISTS'); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
