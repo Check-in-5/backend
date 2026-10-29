@@ -54,3 +54,34 @@ Se reemplazó el flujo provisional `/api/check-in/resolve` y se retiraron sus cl
 ## Convenci?n de nombres
 
 Las variables, par?metros, funciones y m?todos propios usan espa?ol, singular y snake_case. Las colecciones se nombran con un sustantivo singular, por ejemplo resultado_conjunto. Se mantienen los identificadores obligatorios de JavaScript y de bibliotecas (constructor, status, body, etc.), los campos del contrato HTTP (ticket, qr_data, code, message), las rutas acordadas, las variables de entorno y el esquema existente para preservar compatibilidad.
+
+## Arquitectura y Docker
+
+El servicio conserva tres capas: HTTP y rutas en `src/app.js`, lógica de negocio en
+`src/service.js` y persistencia en `src/repository.js`. `src/server.js` conecta las
+capas e inicia el servidor. El contrato HTTP está en `docs/openapi.json`.
+
+Como en el ejemplo skeletotitec, este microservicio tiene su propio Dockerfile y
+Docker Compose, y participa en la red externa compartida `sandwich-net`.
+
+```powershell
+docker network create sandwich-net
+docker compose up --build -d
+```
+
+Crear la red una sola vez; si ya existe, continuar con Compose.
+Swagger: http://localhost:3001/api-docs. Desde otro contenedor de la red:
+`http://checkin-service:3001`. No necesita los servicios de sándwich para funcionar.
+
+Docker configura HOST=0.0.0.0 para recibir conexiones. La ejecución local mantiene
+HOST=127.0.0.1 por defecto. PORT cambia el puerto publicado en el equipo.
+La base SQLite del contenedor queda en el volumen `checkin-data`, independiente de
+la base local en `data/`; los datos locales no se copian a la imagen.
+
+```powershell
+docker compose logs -f checkin-service
+docker compose down
+```
+
+El volumen se conserva al detener el servicio. `docker compose down -v` elimina
+los tickets del volumen. El healthcheck consulta `/health`.

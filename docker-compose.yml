@@ -1,0 +1,27 @@
+services:
+  checkin-service:
+    build: .
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3001
+      DB_PATH: /app/data/checkin.sqlite
+    ports:
+      - "${PORT:-3001}:3001"
+    volumes:
+      - checkin-data:/app/data
+    networks:
+      - sandwich-net
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  checkin-data:
+
+networks:
+  sandwich-net:
+    external: true
