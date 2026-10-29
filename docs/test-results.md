@@ -1,9 +1,20 @@
 # Resultado de pruebas
 
-Ejecución local: 29 de septiembre de 2026, Node.js v22.19.0, Windows.
-Comando: npm.cmd test.
-Resultado final: 22 pruebas aprobadas, 0 fallidas, 0 omitidas.
+29 de octubre de 2026. Comando: `npm.cmd test`.
+Resultado: 23 aprobadas, 0 fallidas, 1 omitida (MySQL real, requiere TEST_MYSQL=1).
 
-Se verificaron registro y validación HTTP con SQLite real; consulta repetida sin consumo; QR opcional coherente; duplicados sin sobrescritura; ocho registros simultáneos con una sola creación; ticket desconocido y evento incorrecto sin exposición de nombre; datos incompletos, tipos, límites y campos adicionales; JSON inválido; límite del cuerpo; error de BD sin detalles internos; persistencia al cerrar y reabrir SQLite; parámetros SQL; Swagger y retiro de la ruta anterior.
+Las pruebas HTTP usan SQLite real como adaptador de prueba: registro y validación
+con `/api/checkin/*`, id_usuario requerido, duplicados simultáneos, persistencia,
+validación del cuerpo, errores internos, parámetros SQL y documentación OpenAPI.
+No demuestran el funcionamiento del nuevo adaptador MySQL.
 
-No se probaron integraciones reales con Entradas ni autenticación. La colección Postman fue actualizada para ejecución manual, pero no ejecutada en Postman. No se certificó el SLA mediante prueba de carga.
+`docker compose config --quiet` y `node --check src/repository-mysql.js` pasaron.
+Docker Engine no estaba disponible, por lo que no se construyó la imagen ni se
+probó el tráfico real a través del Gateway o la conexión a MySQL.
+
+`test/mysql.test.js` permite comprobar persistencia al reconectar, duplicados
+concurrentes y consultas parametrizadas contra la BD real. Usa IDs únicos y limpia
+solo el ticket creado por la prueba. Activación y variables en README.md.
+
+Postman actualizado para el Gateway; no ejecutado en Postman. No se probaron
+Entradas, autenticación, RabbitMQ ni el SLA mediante carga.

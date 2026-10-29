@@ -4,19 +4,19 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: 3001
-      DB_HOST: db
+      DB_HOST: checkin-db
       DB_PORT: 3306
-      DB_USER: checkin_user
-      DB_PASSWORD: checkin_password
+      DB_USER: ${DB_USER:-checkin_user}
+      DB_PASSWORD: ${DB_PASSWORD:-checkin_password}
       DB_NAME: checkin_db
     ports:
       - "${PORT:-3001}:3001"
-    volumes:
-      - checkin-data:/app/data
     networks:
-      - sandwich-net
+      - plataforma-eventos-net
+      - checkin-interna
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
@@ -27,25 +27,32 @@ services:
 
   db:
     image: mysql:8.0
-    container_name: checkin_mysql
-    restart: always
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
       MYSQL_DATABASE: checkin_db
-      MYSQL_USER: checkin_user
-      MYSQL_PASSWORD: checkin_password
+      MYSQL_USER: ${DB_USER:-checkin_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-checkin_password}
     ports:
-      - "3306:3306"
+      - "127.0.0.1:${DB_PORT:-3306}:3306"
     volumes:
       - db_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
-      - sandwich-net
+      checkin-interna:
+        aliases:
+          - checkin-db
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysql --protocol=TCP -h 127.0.0.1 -u $$MYSQL_USER $$MYSQL_DATABASE -e 'SELECT 1 FROM ticket LIMIT 1'"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
 
 volumes:
-  checkin-data:
   db_data:
 
 networks:
-  sandwich-net:
+  plataforma-eventos-net:
     external: true
+  checkin-interna:

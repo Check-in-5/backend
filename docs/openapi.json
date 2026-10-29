@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Check-in local",
+    "title": "TicketU — Check-in",
     "version": "0.2.0",
     "description": "Recepción y validación local. Sin autenticación para esta entrega. Valida existencia y evento; no comprueba anulaciones, horarios ni uso previo y no registra asistencia. Entradas debe enviar solamente tickets emitidos válidos."
   },
@@ -11,7 +11,7 @@
     }
   ],
   "paths": {
-    "/api/v1/checkin/tickets": {
+    "/api/checkin/tickets": {
       "post": {
         "summary": "Recibir y guardar un ticket desde Entradas",
         "requestBody": {
@@ -24,7 +24,8 @@
                 "required": [
                   "id_entrada",
                   "id_evento",
-                  "nombre_usuario"
+                  "nombre_usuario",
+                  "id_usuario"
                 ],
                 "properties": {
                   "id_entrada": {
@@ -50,6 +51,12 @@
                     "minLength": 1,
                     "maxLength": 128,
                     "description": "Opcional; debe ser igual a id_entrada. No es una URL de imagen."
+                  },
+                  "id_usuario": {
+                    "maxLength": 255,
+                    "minLength": 1,
+                    "example": "usr-42",
+                    "type": "string"
                   }
                 }
               }
@@ -199,7 +206,7 @@
         }
       }
     },
-    "/api/v1/checkin/validaciones": {
+    "/api/checkin/validaciones": {
       "post": {
         "summary": "Validar ID leído del QR contra la base local",
         "description": "200 con valido=false para ticket desconocido o de otro evento. No modifica el ticket. Los datos del usuario solo se devuelven si coincide el evento.",

@@ -7,7 +7,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:3001"
+      "value": "http://localhost:8080"
     },
     {
       "key": "ticketId",
@@ -25,10 +25,10 @@
             "value": "application/json"
           }
         ],
-        "url": "{{baseUrl}}/api/v1/checkin/tickets",
+        "url": "{{baseUrl}}/api/checkin/tickets",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"id_entrada\": \"{{ticketId}}\",\n  \"id_evento\": \"evt-77889\",\n  \"nombre_usuario\": \"Sebastián Fuentes\"\n}"
+          "raw": "{\r\n  \"id_entrada\": \"{{ticketId}}\",\r\n  \"id_evento\": \"evt-77889\",\r\n  \"nombre_usuario\": \"Sebastián Fuentes\",\r\n  \"id_usuario\": \"usr-42\"\r\n}"
         }
       },
       "event": [
@@ -62,7 +62,7 @@
             "value": "application/json"
           }
         ],
-        "url": "{{baseUrl}}/api/v1/checkin/validaciones",
+        "url": "{{baseUrl}}/api/checkin/validaciones",
         "body": {
           "mode": "raw",
           "raw": "{\n  \"id_entrada\": \"{{ticketId}}\",\n  \"id_evento\": \"evt-77889\"\n}"
@@ -90,7 +90,7 @@
             "value": "application/json"
           }
         ],
-        "url": "{{baseUrl}}/api/v1/checkin/validaciones",
+        "url": "{{baseUrl}}/api/checkin/validaciones",
         "body": {
           "mode": "raw",
           "raw": "{\n  \"id_entrada\": \"{{ticketId}}\",\n  \"id_evento\": \"otro\"\n}"
@@ -118,10 +118,10 @@
             "value": "application/json"
           }
         ],
-        "url": "{{baseUrl}}/api/v1/checkin/tickets",
+        "url": "{{baseUrl}}/api/checkin/tickets",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"id_entrada\": \"{{ticketId}}\",\n  \"id_evento\": \"evt-77889\",\n  \"nombre_usuario\": \"Sebastián Fuentes\"\n}"
+          "raw": "{\r\n  \"id_entrada\": \"{{ticketId}}\",\r\n  \"id_evento\": \"evt-77889\",\r\n  \"nombre_usuario\": \"Sebastián Fuentes\",\r\n  \"id_usuario\": \"usr-42\"\r\n}"
         }
       },
       "event": [

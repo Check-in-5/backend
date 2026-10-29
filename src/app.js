@@ -15,7 +15,7 @@ export function crear_app({ repositorio }) {
   app.use('/api', (_solicitud, respuesta, continuar) => { respuesta.set('Cache-Control', 'no-store'); continuar(); });
   app.use(crear_express.json({ limit: '16kb' }));
   
-  app.post('/api/v1/checkin/tickets', async (solicitud, respuesta, continuar) => {
+  app.post('/api/checkin/tickets', async (solicitud, respuesta, continuar) => {
     try {
       await servicio.registrar(solicitud.body);
       respuesta.status(201).json({ mensaje: 'Ticket registrado exitosamente para control de acceso.' });
@@ -24,7 +24,7 @@ export function crear_app({ repositorio }) {
     }
   });
   
-  app.post('/api/v1/checkin/validaciones', async (solicitud, respuesta, continuar) => {
+  app.post('/api/checkin/validaciones', async (solicitud, respuesta, continuar) => {
     try {
       const resultado = await servicio.validar(solicitud.body);
       respuesta.json(resultado);

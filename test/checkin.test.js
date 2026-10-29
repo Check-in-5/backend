@@ -8,6 +8,7 @@ import { crear_app } from '../src/app.js';
 import { crear_repositorio } from '../src/repository.js';
 
 const entrada = { id_entrada: 'tk-998877', id_evento: 'evt-77889', nombre_usuario: 'Sebastián Fuentes' };
+const registro = { ...entrada, id_usuario: 'usr-42' };
 const lectura = { id_entrada: entrada.id_entrada, id_evento: entrada.id_evento };
 async function iniciar_servidor(contexto, repositorio = crear_repositorio(':memory:'), cerrar = true) {
   const servidor = crear_app({ repositorio }).listen(0, '127.0.0.1');
@@ -19,52 +20,53 @@ async function iniciar_servidor(contexto, repositorio = crear_repositorio(':memo
   return 'http://127.0.0.1:' + servidor.address().port;
 }
 async function enviar_solicitud(url_base, ruta, cuerpo) {
-  const respuesta = await fetch(url_base + '/api/v1/checkin/' + ruta, {
+  const respuesta = await fetch(url_base + '/api/checkin/' + ruta, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo),
   });
   return { status: respuesta.status, body: await respuesta.json() };
 }
 prueba('registra y valida sin Auth ni dependencias externas; repetir no consume', async contexto => {
   const url_base = await iniciar_servidor(contexto);
-  verificacion.equal((await enviar_solicitud(url_base, 'tickets', entrada)).status, 201);
+  verificacion.equal((await enviar_solicitud(url_base, 'tickets', registro)).status, 201);
   const resultado = await enviar_solicitud(url_base, 'validaciones', lectura);
   verificacion.deepEqual(resultado, { status: 200, body: { valido: true, motivo: 'TICKET_FOUND', ticket: entrada } });
   verificacion.deepEqual(await enviar_solicitud(url_base, 'validaciones', lectura), resultado);
 });
 prueba('QR opcional acepta solo el mismo ID', async contexto => {
   const url_base = await iniciar_servidor(contexto);
-  verificacion.equal((await enviar_solicitud(url_base, 'tickets', { ...entrada, qr_data: 'https://example.com/qr.png' })).status, 400);
-  verificacion.equal((await enviar_solicitud(url_base, 'tickets', { ...entrada, qr_data: entrada.id_entrada })).status, 201);
+  verificacion.equal((await enviar_solicitud(url_base, 'tickets', { ...registro, qr_data: 'https://example.com/qr.png' })).status, 400);
+  verificacion.equal((await enviar_solicitud(url_base, 'tickets', { ...registro, qr_data: entrada.id_entrada })).status, 201);
 });
 prueba('duplicado no sobrescribe y rechaza conflicto de evento', async contexto => {
   const url_base = await iniciar_servidor(contexto);
-  await enviar_solicitud(url_base, 'tickets', entrada);
-  const duplicado = await enviar_solicitud(url_base, 'tickets', { ...entrada, id_evento: 'otro', nombre_usuario: 'Otro' });
+  await enviar_solicitud(url_base, 'tickets', registro);
+  const duplicado = await enviar_solicitud(url_base, 'tickets', { ...registro, id_evento: 'otro', nombre_usuario: 'Otro' });
   verificacion.equal(duplicado.status, 409);
   verificacion.equal(duplicado.body.error.code, 'TICKET_ALREADY_EXISTS');
   verificacion.deepEqual((await enviar_solicitud(url_base, 'validaciones', lectura)).body.ticket, entrada);
 });
 prueba('registros concurrentes: una creación y el resto duplicados', async contexto => {
   const url_base = await iniciar_servidor(contexto);
-  const resultado_conjunto = await Promise.all(Array.from({ length: 8 }, () => enviar_solicitud(url_base, 'tickets', entrada)));
+  const resultado_conjunto = await Promise.all(Array.from({ length: 8 }, () => enviar_solicitud(url_base, 'tickets', registro)));
   verificacion.equal(resultado_conjunto.filter(resultado => resultado.status === 201).length, 1);
   verificacion.equal(resultado_conjunto.filter(resultado => resultado.status === 409).length, 7);
 });
 prueba('desconocido y evento incorrecto no exponen datos personales', async contexto => {
   const url_base = await iniciar_servidor(contexto);
   verificacion.deepEqual((await enviar_solicitud(url_base, 'validaciones', lectura)).body, { valido: false, motivo: 'TICKET_NOT_FOUND' });
-  await enviar_solicitud(url_base, 'tickets', entrada);
+  await enviar_solicitud(url_base, 'tickets', registro);
   verificacion.deepEqual((await enviar_solicitud(url_base, 'validaciones', { ...lectura, id_evento: 'otro' })).body, { valido: false, motivo: 'EVENT_MISMATCH' });
 });
 for (const [nombre, ruta, cuerpo] of [
   ['sin campos', 'tickets', {}],
   ['nombre faltante', 'tickets', lectura],
-  ['ID numérico', 'tickets', { ...entrada, id_entrada: 12 }],
-  ['nombre vacío', 'tickets', { ...entrada, nombre_usuario: ' ' }],
-  ['espacios en ID', 'tickets', { ...entrada, id_entrada: ' tk ' }],
-  ['ID largo', 'tickets', { ...entrada, id_entrada: 'a'.repeat(129) }],
-  ['campo extra', 'tickets', { ...entrada, estado: 'valido' }],
-  ['campo heredado', 'tickets', { ...entrada, constructor: 'x' }],
+  ['usuario faltante', 'tickets', entrada],
+  ['ID numérico', 'tickets', { ...registro, id_entrada: 12 }],
+  ['nombre vacío', 'tickets', { ...registro, nombre_usuario: ' ' }],
+  ['espacios en ID', 'tickets', { ...registro, id_entrada: ' tk ' }],
+  ['ID largo', 'tickets', { ...registro, id_entrada: 'a'.repeat(129) }],
+  ['campo extra', 'tickets', { ...registro, estado: 'valido' }],
+  ['campo heredado', 'tickets', { ...registro, constructor: 'x' }],
   ['array', 'tickets', []],
   ['null', 'tickets', null],
   ['evento faltante', 'validaciones', { id_entrada: entrada.id_entrada }],
@@ -76,14 +78,14 @@ for (const [nombre, ruta, cuerpo] of [
 prueba('JSON malformado y cuerpo grande', async contexto => {
   const url_base = await iniciar_servidor(contexto);
   for (const [cuerpo, esperado] of [['{', 400], [JSON.stringify({ qr: 'x'.repeat(17000) }), 413]]) {
-    const respuesta = await fetch(url_base + '/api/v1/checkin/tickets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: cuerpo });
+    const respuesta = await fetch(url_base + '/api/checkin/tickets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: cuerpo });
     verificacion.equal(respuesta.status, esperado);
   }
 });
 prueba('fallo BD devuelve 500 sin exponer detalles', async contexto => {
   const fallar = () => { throw new Error('clave privada de base de datos'); };
   const url_base = await iniciar_servidor(contexto, { insertar: fallar, buscar_por_id: fallar }, false);
-  for (const [ruta, cuerpo] of [['tickets', entrada], ['validaciones', lectura]]) {
+  for (const [ruta, cuerpo] of [['tickets', registro], ['validaciones', lectura]]) {
     const respuesta = await enviar_solicitud(url_base, ruta, cuerpo);
     verificacion.equal(respuesta.status, 500);
     verificacion.equal(respuesta.body.error.code, 'INTERNAL_ERROR');
@@ -102,7 +104,7 @@ prueba('persistencia: ticket disponible después de cerrar y reabrir SQLite', as
 });
 prueba('identificadores se consultan como parámetros SQL', async contexto => {
   const url_base = await iniciar_servidor(contexto);
-  await enviar_solicitud(url_base, 'tickets', entrada);
+  await enviar_solicitud(url_base, 'tickets', registro);
   const resultado = await enviar_solicitud(url_base, 'validaciones', { ...lectura, id_entrada: "' OR 1=1 --" });
   verificacion.equal(resultado.body.valido, false);
 });
@@ -111,7 +113,7 @@ prueba('Swagger documenta ambos endpoints y el endpoint anterior se retiró', as
   verificacion.equal((await fetch(url_base + '/api-docs/')).status, 200);
   const especificacion = await (await fetch(url_base + '/openapi.json')).json();
   verificacion.equal(new URL(especificacion.servers[0].url, url_base).origin, url_base);
-  verificacion.ok(especificacion.paths['/api/v1/checkin/tickets'].post.responses['201']);
-  verificacion.ok(especificacion.paths['/api/v1/checkin/validaciones'].post.responses['200']);
+  verificacion.ok(especificacion.paths['/api/checkin/tickets'].post.responses['201']);
+  verificacion.ok(especificacion.paths['/api/checkin/validaciones'].post.responses['200']);
   verificacion.equal((await fetch(url_base + '/api/check-in/resolve', { method: 'POST' })).status, 404);
 });

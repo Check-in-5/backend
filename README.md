@@ -1,87 +1,125 @@
-# Backend Check-in
+# TicketU — Microservicio Check-in
 
-Node.js >=22.13 + Express, con SQLite local persistente. Recibe tickets de Entradas y consulta su propia BD al escanear. No requiere otros microservicios ni token para esta entrega. No registra asistencia.
+Node.js >=22.13, Express y MySQL 8. Adaptado a la infraestructura compartida de
+https://github.com/FWizav/backendticketU: servicio `checkin-service`, red externa
+`plataforma-eventos-net` y rutas `/api/checkin/*`. El Gateway conserva el path.
 
-## Ejecutar
-
-```powershell
-npm.cmd install
-npm.cmd start
-```
-
-Swagger: http://localhost:3001/api-docs (o el puerto configurado en PORT). Si había un servidor anterior, detenerlo con Ctrl+C y volver a iniciarlo. Swagger usa el mismo origen desde el que se abre.
-
-La base se crea automáticamente en `data/checkin.sqlite`; los tickets sobreviven al reinicio. Copiar `.env.example` a `.env` para configurar puerto y ruta. Se usa el módulo SQLite incluido en Node; Node 22 puede mostrar una advertencia experimental.
-
-## 1. Recibir ticket desde Entradas
-
-`POST /api/v1/checkin/tickets`
-
-```json
-{
-  "id_entrada": "tk-998877",
-  "id_evento": "evt-77889",
-  "nombre_usuario": "Sebastián Fuentes"
-}
-```
-
-Devuelve 201 con `mensaje`. El ID duplicado devuelve 409 sin sobrescribir datos. `qr_data` es opcional y solo se admite si coincide con `id_entrada`. Entradas debe enviar únicamente tickets emitidos válidos.
-
-## 2. Validar el QR leído por el frontend
-
-`POST /api/v1/checkin/validaciones`
-
-```json
-{ "id_entrada": "tk-998877", "id_evento": "evt-77889" }
-```
-
-Devuelve 200 con `valido: true`, `motivo: TICKET_FOUND` y `ticket` si existe y coincide el evento. Devuelve 200 con `valido: false` y `TICKET_NOT_FOUND` o `EVENT_MISMATCH` si falla esa comprobación. Datos de entrada inválidos: 400; cuerpo demasiado grande: 413; error interno: 500.
-
-**Validez limitada a existencia y evento.** No comprueba anulación, horario, pago ni uso previo. No marca el ticket como utilizado; validarlo repetidamente da el mismo resultado. Falta acordar estados y actualizaciones con Entradas. El frontend proporciona el evento seleccionado por portería y el texto del QR como ID.
-
-## Alcance y base de datos
-
-SQLite es un adaptador local para probar el flujo completo; el responsable de BD puede sustituir `src/repository.js` conservando `insertar` y `buscar_por_id`. El esquema está en `docs/schema.sql`. No hay usuarios ni eventos locales completos: se guarda ID de entrada, ID de evento y nombre recibido según el alcance acordado. La réplica debe coordinarse con las restricciones de la pauta.
-
-El escaneo funciona si Entradas está desconectado, siempre que el ticket ya se haya recibido. El celular todavía necesita acceso al servidor Check-in. El servidor escucha en 127.0.0.1; la exposición a la red y CORS se configuran con frontend posteriormente.
-
-Se reemplazó el flujo provisional `/api/check-in/resolve` y se retiraron sus clientes externos y mocks. BE3 hacia Reseñas sigue pendiente. Auth y política de reintentos quedan fuera de esta entrega.
-
-## Pruebas
-
-`npm.cmd test` prueba los endpoints con SQLite real, duplicados simultáneos, persistencia al reabrir la BD, datos inválidos y errores internos. Importar `docs/checkin.postman_collection.json` y ejecutar en orden para la demostración manual. No necesita Authorize.
-
-## Convenci?n de nombres
-
-Las variables, par?metros, funciones y m?todos propios usan espa?ol, singular y snake_case. Las colecciones se nombran con un sustantivo singular, por ejemplo resultado_conjunto. Se mantienen los identificadores obligatorios de JavaScript y de bibliotecas (constructor, status, body, etc.), los campos del contrato HTTP (ticket, qr_data, code, message), las rutas acordadas, las variables de entorno y el esquema existente para preservar compatibilidad.
-
-## Arquitectura y Docker
-
-El servicio conserva tres capas: HTTP y rutas en `src/app.js`, lógica de negocio en
-`src/service.js` y persistencia en `src/repository.js`. `src/server.js` conecta las
-capas e inicia el servidor. El contrato HTTP está en `docs/openapi.json`.
-
-Como en el ejemplo skeletotitec, este microservicio tiene su propio Dockerfile y
-Docker Compose, y participa en la red externa compartida `sandwich-net`.
+## Iniciar con Docker
 
 ```powershell
-docker network create sandwich-net
+docker network create plataforma-eventos-net
+Copy-Item .env.example .env
 docker compose up --build -d
+docker compose ps
 ```
 
-Crear la red una sola vez; si ya existe, continuar con Compose.
-Swagger: http://localhost:3001/api-docs. Desde otro contenedor de la red:
-`http://checkin-service:3001`. No necesita los servicios de sándwich para funcionar.
+Crear la red y copiar la plantilla una sola vez. Si ya tienes `.env`, conserva tus
+valores y revisa las nuevas variables. MySQL debe estar saludable antes de iniciar
+Check-in. `init.sql` se ejecuta solo al inicializar un volumen vacío. Los datos
+existentes en `db_data` se conservan; cambiar credenciales en `.env` no modifica
+usuarios que ya existen en ese volumen.
 
-Docker configura HOST=0.0.0.0 para recibir conexiones. La ejecución local mantiene
-HOST=127.0.0.1 por defecto. PORT cambia el puerto publicado en el equipo.
-La base SQLite del contenedor queda en el volumen `checkin-data`, independiente de
-la base local en `data/`; los datos locales no se copian a la imagen.
+- Swagger directo: http://localhost:3001/api-docs
+- Health directo: http://localhost:3001/health (comprueba HTTP, no la conexión a BD).
+- URL interna del servicio: `http://checkin-service:3001`.
+- `PORT` cambia el puerto publicado al equipo; dentro de Docker sigue siendo 3001.
+- MySQL utiliza el volumen existente `db_data` y una red propia de Check-in.
+- MySQL se publica solo en localhost; `DB_PORT` cambia ese puerto para uso local.
 
 ```powershell
 docker compose logs -f checkin-service
 docker compose down
 ```
 
-El volumen se conserva al detener el servicio. `docker compose down -v` elimina
-los tickets del volumen. El healthcheck consulta `/health`.
+`down` conserva los datos. `down -v` elimina el volumen de MySQL y sus tickets.
+
+## Registrar en el Gateway compartido
+
+En el `.env` de `backendticketU/api-gateway` configurar:
+
+```env
+CHECKIN_SERVICE_URL=http://checkin-service:3001
+```
+
+Después, desde la carpeta del Gateway:
+
+```powershell
+docker compose up --build -d
+```
+
+El Gateway y Check-in deben estar en la misma red Docker de la misma máquina.
+No se copia un Gateway ni un RabbitMQ adicional a este repositorio.
+
+## Probar a través del Gateway
+
+```powershell
+Invoke-RestMethod http://localhost:8080/health
+
+$cuerpo = @{
+  id_entrada = 'tk-demo-001'
+  id_evento = 'evt-001'
+  id_usuario = 'usr-001'
+  nombre_usuario = 'Usuario Demo'
+} | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/checkin/tickets -ContentType 'application/json' -Body $cuerpo
+
+$lectura = @{ id_entrada = 'tk-demo-001'; id_evento = 'evt-001' } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/checkin/validaciones -ContentType 'application/json' -Body $lectura
+```
+
+La primera creación devuelve 201; repetir el mismo ID devuelve 409.
+Validar devuelve 200 con `valido` y `motivo` (`TICKET_FOUND`, `TICKET_NOT_FOUND`
+o `EVENT_MISMATCH`). Solo el caso válido incluye `ticket` con ID, evento y nombre.
+Datos inválidos: 400; cuerpo demasiado grande: 413; fallo interno: 500.
+`qr_data` es opcional y debe ser el mismo texto que `id_entrada`.
+
+Importar `docs/checkin.postman_collection.json`: `baseUrl` apunta por defecto al
+Gateway en 8080; cambiarlo a `http://localhost:3001` permite probar directo.
+
+## Frontend y migración de rutas
+
+Las rutas anteriores `/api/v1/checkin/*` se sustituyen por `/api/checkin/*`.
+El frontend debe solicitar `/api/checkin/validaciones` al Gateway. Si mantiene un
+proxy propio de Next.js, cambiar tanto su URL de destino como la ruta reenviada;
+cambiar solo BACKEND_URL no basta si todavía concatena `/api/v1/checkin/...`.
+El frontend no fue modificado en este ajuste. CORS para peticiones del navegador
+se configura en el Gateway mediante `CORS_ORIGINS`.
+
+## Ejecución local y pruebas
+
+```powershell
+npm.cmd ci
+# Con MySQL de Compose disponible en localhost:
+docker compose up -d db
+npm.cmd start
+npm.cmd test
+```
+
+`src/app.js` contiene HTTP, `src/service.js` las reglas de negocio y
+`src/repository-mysql.js` el adaptador usado en ejecución. Las pruebas HTTP usan
+el adaptador SQLite de `src/repository.js` y `docs/schema.sql`, sin necesitar Docker.
+La prueba MySQL real se habilita con `TEST_MYSQL=1` y las variables DB_* del entorno:
+
+```powershell
+$env:TEST_MYSQL = '1'
+node --env-file-if-exists=.env --test
+Remove-Item Env:TEST_MYSQL
+```
+
+## Alcance y eventos
+
+Recibe tickets de Entradas y valida existencia y coincidencia de evento. No
+registra asistencia, no consume tickets y no verifica anulaciones, pago u horario.
+El contrato de registro requiere `id_usuario`, como ya exige la lógica y la tabla
+MySQL del proyecto. Los endpoints no requieren autenticación en esta entrega.
+
+El molde propone `entrada.emitida` y `checkin.realizado`, pero declara esos eventos
+pendientes de acuerdo entre grupos. No se publica `checkin.realizado` al validar,
+porque aún no se registra asistencia. RabbitMQ no es una dependencia de este flujo
+HTTP. Cuando se acuerde el contrato, usar el broker compartido, `ticketu.events`
+y una cola durable propia para Check-in. No se ha implementado ese consumidor.
+
+## Convención de nombres
+
+Variables, parámetros, funciones y métodos propios en español y snake_case.
+Se preservan los nombres de bibliotecas, variables de entorno y campos HTTP.
