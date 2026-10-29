@@ -4,13 +4,19 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: 3001
-      DB_PATH: /app/data/checkin.sqlite
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: checkin_user
+      DB_PASSWORD: checkin_password
+      DB_NAME: checkin_db
     ports:
       - "${PORT:-3001}:3001"
     volumes:
       - checkin-data:/app/data
     networks:
       - sandwich-net
+    depends_on:
+      - db
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
@@ -19,8 +25,26 @@ services:
       retries: 3
     restart: unless-stopped
 
+  db:
+    image: mysql:8.0
+    container_name: checkin_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: checkin_db
+      MYSQL_USER: checkin_user
+      MYSQL_PASSWORD: checkin_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - sandwich-net
+
 volumes:
   checkin-data:
+  db_data:
 
 networks:
   sandwich-net:
