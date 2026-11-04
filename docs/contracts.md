@@ -1,8 +1,8 @@
 # Contrato HTTP de Check-in
 
 Prefijo oficial: `/api/checkin`. El Gateway conserva la ruta completa.
-Gateway: `http://localhost:8080`; directo: `http://localhost:3001`.
-Configuración del Gateway: `CHECKIN_SERVICE_URL=http://checkin-service:3001`.
+Gateway: `http://localhost:8080`; directo: `http://localhost:3005`.
+Configuración del Gateway: `CHECKIN_SERVICE_URL=http://checkin-service:3005`.
 Red externa: `plataforma-eventos-net`.
 
 ## Registro

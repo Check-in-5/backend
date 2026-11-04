@@ -5,7 +5,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --chown=node:node src ./src
 COPY --chown=node:node docs ./docs
 
-ENV NODE_ENV=production HOST=0.0.0.0 PORT=3001
+ENV NODE_ENV=production HOST=0.0.0.0 PORT=3005
 USER node
-EXPOSE 3001
+EXPOSE 3005
 CMD ["node", "src/server.js"]

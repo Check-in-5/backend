@@ -2,7 +2,7 @@ import { crear_app } from './app.js';
 import { crear_repositorio_mysql } from './repository-mysql.js';
 
 const anfitrion = process.env.HOST ?? '127.0.0.1';
-const puerto = Number(process.env.PORT ?? 3001);
+const puerto = Number(process.env.PORT ?? 3005);
 
 if (!Number.isInteger(puerto) || puerto < 1 || puerto > 65535) throw new Error('PORT inválido.');
 

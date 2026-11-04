@@ -19,10 +19,10 @@ Check-in. `init.sql` se ejecuta solo al inicializar un volumen vacío. Los datos
 existentes en `db_data` se conservan; cambiar credenciales en `.env` no modifica
 usuarios que ya existen en ese volumen.
 
-- Swagger directo: http://localhost:3001/api-docs
-- Health directo: http://localhost:3001/health (comprueba HTTP, no la conexión a BD).
-- URL interna del servicio: `http://checkin-service:3001`.
-- `PORT` cambia el puerto publicado al equipo; dentro de Docker sigue siendo 3001.
+- Swagger directo: http://localhost:3005/api-docs
+- Health directo: http://localhost:3005/health (comprueba HTTP, no la conexión a BD).
+- URL interna del servicio: `http://checkin-service:3005`.
+- `PORT` cambia el puerto publicado al equipo; dentro de Docker sigue siendo 3005.
 - MySQL utiliza el volumen existente `db_data` y una red propia de Check-in.
 - MySQL se publica solo en localhost; `DB_PORT` cambia ese puerto para uso local.
 
@@ -38,7 +38,7 @@ docker compose down
 En el `.env` de `backendticketU/api-gateway` configurar:
 
 ```env
-CHECKIN_SERVICE_URL=http://checkin-service:3001
+CHECKIN_SERVICE_URL=http://checkin-service:3005
 ```
 
 Después, desde la carpeta del Gateway:
@@ -74,7 +74,7 @@ Datos inválidos: 400; cuerpo demasiado grande: 413; fallo interno: 500.
 `qr_data` es opcional y debe ser el mismo texto que `id_entrada`.
 
 Importar `docs/checkin.postman_collection.json`: `baseUrl` apunta por defecto al
-Gateway en 8080; cambiarlo a `http://localhost:3001` permite probar directo.
+Gateway en 8080; cambiarlo a `http://localhost:3005` permite probar directo.
 
 ## Frontend y migración de rutas
 
