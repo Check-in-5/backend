@@ -4,7 +4,7 @@ Node.js >=22.13, Express y MySQL 8. Adaptado a la infraestructura compartida de
 https://github.com/FWizav/backendticketU: servicio `checkin-service`, red externa
 `plataforma-eventos-net` y rutas `/api/checkin/*`. El Gateway conserva el path.
 
-## Iniciar con Docker
+## Iniciar con Docker🤔
 
 ```powershell
 docker network create plataforma-eventos-net
