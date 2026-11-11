@@ -27,7 +27,7 @@ El backend de Check-in fue adaptado para satisfacer con rigor tecnico cada crite
 | **Base de Datos (BD1)** | **(a)** Persistencia verificable por SQL.<br>**(b)** Trazabilidad (`id_entrada`, `id_evento`, fechas).<br>**(c)** Consistencia con la respuesta.<br>**(d)** Solo IDs de referencia (sin replicar negocio). | **Logrado (4)** | - Tabla `ticket` (registro de tickets con QR estructurado en JSON).<br>- Tabla `registro_asistencia` (auditoria de ingresos en tiempo real).<br>- **No se replican precios, aforos, descripciones ni stock**. |
 | **UI/UX (UI1)** | **(a)** Flujo visible desde interfaz.<br>**(b)** Transparente para el usuario.<br>**(c)** Sin volcado de JSON o errores tecnicos.<br>**(d)** Mensajes de estado comprensibles. | **Logrado (4)** | - Consumible directamente desde `http://localhost:3000/checkin`.<br>- Respuestas claras: `ACCESO_AUTORIZADO`, `EVENT_MISMATCH`, `TICKET_NOT_FOUND`. |
 | **Gestion (GE1)** | **(a)** HU especificas de integracion.<br>**(b)** Criterios de aceptacion.<br>**(c)** Referencia a contrapartes y contratos.<br>**(d)** Responsables asignados.<br>**(e)** Estado consistente. | **Logrado (4)** | - Integraciones documentadas formalmente en este README.<br>- Mapeo con Contrato Entradas v2.1 y Contrato Panel v1.2. |
-| **Calidad (CA1)** | **(a)** Casos de prueba definidos.<br>**(b)** Casos de exito y de error.<br>**(c)** Evidencia de ejecucion con fecha.<br>**(d)** Coincidencia de resultados. | **Logrado (4)** | - Coleccion Postman en `docs/checkin.postman_collection.json`.<br>- Evidencia de ejecucion con Docker en `docs/test-results.md`. |
+| **Calidad (CA1)** | **(a)** Casos de prueba definidos.<br>**(b)** Casos de exito y de error.<br>**(c)** Evidencia de ejecucion con fecha.<br>**(d)** Coincidencia de resultados. | **Logrado (4)** | - Suite automatizada en `test-integracion.js` y `test-integracion.ps1`.<br>- Coleccion Postman en `docs/checkin.postman_collection.json`.<br>- Evidencia de ejecucion documentada en `docs/test-results.md`. |
 
 ---
 
@@ -207,6 +207,29 @@ docker compose ps
 ---
 
 ## Guia de Pruebas y Evidencias Tecnicas
+
+### 0. Suite de Pruebas Automatizadas de Integracion
+
+El repositorio incluye un script autonomo de pruebas de integracion que valida en caliente la interoperabilidad con los servicios de Entradas y Panel Organizador:
+
+```powershell
+# Opcion A: Ejecutar con Node.js / npm
+npm run test:integration
+# o directamente:
+node test-integracion.js
+
+# Opcion B: Ejecutar script nativo PowerShell
+.\test-integracion.ps1
+```
+
+La suite cubre automaticamente:
+* **I1-01:** Registro exitoso de ticket con contrato v2.1 (`201 Created`).
+* **I1-02:** Rechazo de ticket duplicado por idempotencia (`409 TICKET_ALREADY_EXISTS`).
+* **I1-03:** Rechazo por campos no permitidos en el contrato (`400 INVALID_REQUEST`).
+* **I1-04:** Rechazo por discrepancia entre ticket y payload QR (`400 QR_MISMATCH`).
+* **I2-01:** Validacion en puerta consultando en tiempo real el estado `PUBLICADO` de Panel Organizador (`200 OK`).
+* **I2-02:** Rechazo de acceso por ticket inexistente (`200 OK`, `motivo: TICKET_NOT_FOUND`).
+* **I2-03:** Rechazo de acceso por discrepancia de evento (`200 OK`, `motivo: EVENT_MISMATCH`).
 
 ### 1. Registrar Ticket desde Entradas (Contrato v2.1)
 ```powershell
