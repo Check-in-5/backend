@@ -12,5 +12,7 @@ Los siguientes tickets están pre-cargados en la base de datos local de Check-in
 | `tk-otro-evento`| `evt-teatro-99` | `usr-103` | Usuario Prueba | **Escaneo 1:** `200 OK` (valido: false, motivo: `EVENT_MISMATCH`) si se envía con `id_evento` incorrecto. |
 
 ## Instrucciones para otros microservicios
-*   **Reseñas:** Al enviar la petición de validación exitosa (Escaneo 1) de cualquiera de estos tickets, nuestro microservicio publicará automáticamente el evento `checkin.realizado` en el exchange `ticketu.events` de RabbitMQ con el payload correspondiente (`id_entrada`, `id_evento`, `id_usuario`, `fecha_checkin`).
+*   **Reseñas:** El microservicio de Check-in **no emite eventos por cada escaneo individual**. Para notificar a los demás microservicios (como Reseñas), se debe invocar el endpoint de finalización una vez concluido el evento.
+*   **Petición de prueba:** `POST /api/checkin/eventos/evt-concierto-01/finalizar`
+*   **Comportamiento:** Extrae todos los ingresos registrados para ese evento y pu
 *   **Entradas:** Si intentan registrar (`POST /api/checkin/tickets`) cualquiera de estos IDs nuevamente, el sistema devolverá `409 Conflict` (motivo: `TICKET_ALREADY_EXISTS`).

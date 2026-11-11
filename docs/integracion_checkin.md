@@ -18,7 +18,7 @@ Para cumplir con los lineamientos del Platform Team y permitir la comunicación 
 ## 2. Modificaciones en el Código Fuente (`src/`)
 
 ### 2.1. Nuevo publicador de eventos (`src/rabbitmq.js`)
-Se creó un nuevo módulo encargado de establecer la conexión con RabbitMQ, asegurar la existencia del exchange tipo `topic` (`ticketu.events`) y publicar mensajes. La conexión se abre y cierra de forma segura tras cada publicación para evitar el bloqueo del event loop.
+Se creó un nuevo módulo encargado de establecer la conexión con RabbitMQ, asegurar la existencia del exchange tipo `topic` (`ticketu.events`) y publicar mensajes. La conexión se abre y cierra de forma segura tras cada publicación para evitar el bloqueo del event loop.La emisión de asistencia hacia RabbitMQ se realiza por lotes mediante el endpoint /api/checkin/eventos/:id_evento/finalizar"
 
 ### 2.2. Actualización de Repositorio MySQL (`src/repository-mysql.js`)
 *   Se modificó `buscar_por_id` para retornar también el campo `id_usuario`, necesario para el payload del evento hacia Reseñas.
@@ -31,7 +31,7 @@ Se creó un nuevo módulo encargado de establecer la conexión con RabbitMQ, ase
 Se reestructuró el método `validar` para integrar el flujo completo:
 1.  Verifica la existencia y correspondencia del ticket (`TICKET_NOT_FOUND`, `EVENT_MISMATCH`).
 2.  Invoca `registrar_ingreso`. Si este falla, aborta la operación y retorna un nuevo motivo: `TICKET_ALREADY_USED`.
-3.  Si el registro de asistencia es exitoso, invoca `publicar_evento` con el routing key `checkin.realizado`. El payload incluye `id_entrada`, `id_evento`, `id_usuario` y `fecha_checkin`.
+3.  Si el registro de asistencia es exitoso, La emisión de asistencia hacia RabbitMQ se realiza por lotes mediante el endpoint /api/checkin/eventos/:id_evento/finalizar". El payload incluye `id_entrada`, `id_evento`, `id_usuario` y `fecha_checkin`.
 4.  Por motivos de privacidad, filtra el `id_usuario` del objeto final retornado al operador en la puerta.
 
 ## 3. Actualización de Contratos (API)
