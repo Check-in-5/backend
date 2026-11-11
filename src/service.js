@@ -1,4 +1,5 @@
 import { error_api } from './errors.js';
+import { publicar_evento } from './rabbitmq.js';
 
 function validar_cuerpo(cuerpo, campo) {
   if (!cuerpo || typeof cuerpo !== 'object' || Array.isArray(cuerpo) || Object.keys(cuerpo).some(clave => !Object.hasOwn(campo, clave))) {
@@ -14,7 +15,6 @@ function validar_cuerpo(cuerpo, campo) {
 export function crear_servicio(repositorio) {
   return {
     async registrar(cuerpo) {
-      // Se añade id_usuario para cumplir con la restricción NOT NULL de la nueva tabla MySQL
       const campo = { id_entrada: 128, id_evento: 128, id_usuario: 255, nombre_usuario: 200 };
       if (cuerpo && Object.hasOwn(cuerpo, 'qr_data')) campo.qr_data = 128;
       
@@ -24,7 +24,6 @@ export function crear_servicio(repositorio) {
         throw new error_api(400, 'QR_MISMATCH', 'qr_data debe coincidir con id_entrada; no se aceptan URLs de imágenes.');
       }
       
-      // Se utiliza await y se pasan los nuevos campos requeridos al repositorio
       const insertado = await repositorio.insertar({ 
         id_entrada: cuerpo.id_entrada, 
         id_evento: cuerpo.id_evento, 
@@ -39,13 +38,33 @@ export function crear_servicio(repositorio) {
     async validar(cuerpo) {
       validar_cuerpo(cuerpo, { id_entrada: 128, id_evento: 128 });
       
-      // Se utiliza await para la consulta asíncrona a MySQL
       const entrada = await repositorio.buscar_por_id(cuerpo.id_entrada);
       
       if (!entrada) return { valido: false, motivo: 'TICKET_NOT_FOUND' };
       if (entrada.id_evento !== cuerpo.id_evento) return { valido: false, motivo: 'EVENT_MISMATCH' };
       
-      return { valido: true, motivo: 'TICKET_FOUND', ticket: entrada };
+      const ingreso_exitoso = await repositorio.registrar_ingreso(
+        entrada.id_entrada, 
+        entrada.id_evento, 
+        entrada.id_usuario
+      );
+
+      if (!ingreso_exitoso) {
+        return { valido: false, motivo: 'TICKET_ALREADY_USED' };
+      }
+
+      const datos_evento = {
+        id_entrada: entrada.id_entrada,
+        id_evento: entrada.id_evento,
+        id_usuario: entrada.id_usuario,
+        fecha_checkin: new Date().toISOString()
+      };
+      
+      await publicar_evento('checkin.realizado', datos_evento);
+
+      const { id_usuario, ...ticket_para_operador } = entrada;
+
+      return { valido: true, motivo: 'TICKET_FOUND', ticket: ticket_para_operador };
     },
   };
 }

@@ -1,6 +1,5 @@
 import { createPool as crear_pool } from 'mysql2/promise';
 
-// La tabla y sus índices se crean mediante init.sql en el contenedor de MySQL.
 export async function crear_repositorio_mysql(configuracion = {}) {
   const base_dato = crear_pool({
     host: process.env.DB_HOST ?? '127.0.0.1',
@@ -12,6 +11,7 @@ export async function crear_repositorio_mysql(configuracion = {}) {
     connectionLimit: 10,
     ...configuracion,
   });
+  
   try {
     await base_dato.query('SELECT 1 FROM ticket LIMIT 1');
     return {
@@ -27,12 +27,28 @@ export async function crear_repositorio_mysql(configuracion = {}) {
           throw error;
         }
       },
+      
       async buscar_por_id(id) {
         const [fila_conjunto] = await base_dato.execute(
-          'SELECT id_entrada, id_evento, nombre_usuario FROM ticket WHERE id_entrada = ?', [id],
+          'SELECT id_entrada, id_evento, id_usuario, nombre_usuario FROM ticket WHERE id_entrada = ?', [id],
         );
         return fila_conjunto[0] ? { ...fila_conjunto[0] } : null;
       },
+      
+      async registrar_ingreso(id_entrada, id_evento, id_usuario) {
+        const [ingresos_previos] = await base_dato.execute(
+          'SELECT id_asistencia FROM registro_asistencia WHERE id_entrada = ?', [id_entrada]
+        );
+        
+        if (ingresos_previos.length > 0) return false;
+
+        await base_dato.execute(
+          'INSERT INTO registro_asistencia (id_entrada, id_evento, id_usuario) VALUES (?, ?, ?)',
+          [id_entrada, id_evento, id_usuario]
+        );
+        return true;
+      },
+      
       async cerrar() { await base_dato.end(); },
     };
   } catch (error) {

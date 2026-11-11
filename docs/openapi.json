@@ -263,7 +263,9 @@
                         "motivo": {
                           "type": "string",
                           "enum": [
-                            "TICKET_FOUND"
+                            "TICKET_NOT_FOUND",
+                            "EVENT_MISMATCH",
+                            "TICKET_ALREADY_USED"
                           ]
                         },
                         "ticket": {
