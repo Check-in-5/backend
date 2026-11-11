@@ -17,9 +17,10 @@ export async function crear_repositorio_mysql(configuracion = {}) {
     return {
       async insertar(entrada) {
         try {
+          const qr_json = typeof entrada.qr_data === 'string' ? entrada.qr_data : JSON.stringify(entrada.qr_data);
           await base_dato.execute(
             'INSERT INTO ticket (id_entrada, id_evento, id_usuario, nombre_usuario, qr_data) VALUES (?, ?, ?, ?, ?)',
-            [entrada.id_entrada, entrada.id_evento, entrada.id_usuario, entrada.nombre_usuario, JSON.stringify(entrada.qr_data)],
+            [entrada.id_entrada, entrada.id_evento, entrada.id_usuario || 'usr-externo', entrada.nombre_usuario, qr_json],
           );
           return true;
         } catch (error) {

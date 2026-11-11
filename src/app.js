@@ -14,7 +14,7 @@ export function crear_app({ repositorio }) {
   app.use((solicitud, respuesta, continuar) => {
     respuesta.set('Access-Control-Allow-Origin', '*');
     respuesta.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
-    respuesta.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key');
+    respuesta.set('Access-Control-Allow-Headers', 'Content-Type');
     if (solicitud.method === 'OPTIONS') {
       return respuesta.sendStatus(204);
     }
@@ -27,23 +27,29 @@ export function crear_app({ repositorio }) {
   app.use('/api', (_solicitud, respuesta, continuar) => { respuesta.set('Cache-Control', 'no-store'); continuar(); });
   app.use(crear_express.json({ limit: '16kb' }));
   
-  app.post('/api/checkin/tickets', async (solicitud, respuesta, continuar) => {
+  const manejar_registro_ticket = async (solicitud, respuesta, continuar) => {
     try {
       await servicio.registrar(solicitud.body);
-      respuesta.status(201).json({ mensaje: 'Ticket registrado exitosamente para control de acceso.' });
+      respuesta.status(201).json({ mensaje: 'Confirmación de recepción del QR y creación del ticket para check-in.' });
     } catch (error) {
       continuar(error);
     }
-  });
-  
-  app.post('/api/checkin/validaciones', async (solicitud, respuesta, continuar) => {
+  };
+
+  const manejar_validacion = async (solicitud, respuesta, continuar) => {
     try {
       const resultado = await servicio.validar(solicitud.body);
       respuesta.json(resultado);
     } catch (error) {
       continuar(error);
     }
-  });
+  };
+
+  // Rutas acordadas en contratos (v2.1 y v1.2) con retrocompatibilidad
+  app.post('/api/v1/checkin/tickets', manejar_registro_ticket);
+  app.post('/api/checkin/tickets', manejar_registro_ticket);
+  app.post('/api/v1/checkin/validaciones', manejar_validacion);
+  app.post('/api/checkin/validaciones', manejar_validacion);
   
   app.use((_solicitud, _respuesta, continuar) => continuar(new error_api(404, 'ROUTE_NOT_FOUND', 'Ruta no encontrada.')));
   app.use((error, _solicitud, respuesta, _continuar) => {
