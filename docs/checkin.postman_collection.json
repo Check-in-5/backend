@@ -2,7 +2,7 @@
   "info": {
     "name": "Check-in local — registro y validación",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Ejecutar en orden. Genera un ID nuevo al registrar para repetir la colección sin borrar la BD."
+    "description": "Ejecutar en orden. Genera un ID nuevo al registrar para repetir la colección sin borrar la BD. Incluye validación de duplicados y envío de lote a RabbitMQ."
   },
   "variable": [
     {
@@ -81,6 +81,34 @@
       ]
     },
     {
+      "name": "Validar ticket duplicado",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/checkin/validaciones",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_entrada\": \"{{ticketId}}\",\n  \"id_evento\": \"evt-77889\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Validar duplicado', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().valido).to.eql(false); pm.expect(pm.response.json().motivo).to.eql('TICKET_ALREADY_USED'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "Rechazar otro evento",
       "request": {
         "method": "POST",
@@ -130,7 +158,30 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test('Rechazar duplicado', () => { pm.response.to.have.status(409); pm.expect(pm.response.json().error.code).to.eql('TICKET_ALREADY_EXISTS'); });"
+              "pm.test('Rechazar duplicado (registro)', () => { pm.response.to.have.status(409); pm.expect(pm.response.json().error.code).to.eql('TICKET_ALREADY_EXISTS'); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Finalizar evento",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/api/checkin/eventos/evt-77889/finalizar",
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Emitir lote', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().mensaje).to.eql('Lote de asistencia emitido a RabbitMQ'); });"
             ]
           }
         }

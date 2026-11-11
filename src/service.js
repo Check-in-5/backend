@@ -60,11 +60,31 @@ export function crear_servicio(repositorio) {
         fecha_checkin: new Date().toISOString()
       };
       
-      await publicar_evento('checkin.realizado', datos_evento);
+      //await publicar_evento('checkin.realizado', datos_evento);
 
       const { id_usuario, ...ticket_para_operador } = entrada;
 
       return { valido: true, motivo: 'TICKET_FOUND', ticket: ticket_para_operador };
+    },
+    async enviar_lote_resenas(id_evento) {
+      if (typeof id_evento !== 'string' || !id_evento.trim()) {
+        throw new error_api(400, 'INVALID_REQUEST', 'El id_evento es inválido.');
+      }
+      
+      const asistentes = await repositorio.obtener_asistentes(id_evento);
+      
+      if (asistentes.length === 0) return 0;
+      
+      const payload = {
+        id_evento: id_evento,
+        total_asistentes: asistentes.length,
+        asistentes: asistentes,
+        fecha_emision: new Date().toISOString()
+      };
+      
+      await publicar_evento('checkin.asistencia_final', payload);
+      
+      return asistentes.length;
     },
   };
 }

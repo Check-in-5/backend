@@ -27,7 +27,13 @@ export async function crear_repositorio_mysql(configuracion = {}) {
           throw error;
         }
       },
-      
+      async obtener_asistentes(id_evento) {
+        const [asistentes] = await base_dato.execute(
+          'SELECT id_usuario, id_entrada FROM registro_asistencia WHERE id_evento = ?',
+          [id_evento]
+        );
+        return asistentes;
+      },
       async buscar_por_id(id) {
         const [fila_conjunto] = await base_dato.execute(
           'SELECT id_entrada, id_evento, id_usuario, nombre_usuario FROM ticket WHERE id_entrada = ?', [id],
