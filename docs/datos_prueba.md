@@ -14,5 +14,5 @@ Los siguientes tickets están pre-cargados en la base de datos local de Check-in
 ## Instrucciones para otros microservicios
 *   **Reseñas:** El microservicio de Check-in **no emite eventos por cada escaneo individual**. Para notificar a los demás microservicios (como Reseñas), se debe invocar el endpoint de finalización una vez concluido el evento.
 *   **Petición de prueba:** `POST /api/checkin/eventos/evt-concierto-01/finalizar`
-*   **Comportamiento:** Extrae todos los ingresos registrados para ese evento y pu
+*   **Comportamiento:** Extrae todos los ingresos registrados para ese evento y publica un único mensaje masivo en el exchange `ticketu.events` bajo el routing key `checkin.asistencia_final`.
 *   **Entradas:** Si intentan registrar (`POST /api/checkin/tickets`) cualquiera de estos IDs nuevamente, el sistema devolverá `409 Conflict` (motivo: `TICKET_ALREADY_EXISTS`).
