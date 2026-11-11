@@ -9,6 +9,18 @@ export function crear_app({ repositorio }) {
   const app = crear_express();
   const servicio = crear_servicio(repositorio);
   app.disable('x-powered-by');
+  
+  // Soporte CORS para comunicación directa con el Front-End
+  app.use((solicitud, respuesta, continuar) => {
+    respuesta.set('Access-Control-Allow-Origin', '*');
+    respuesta.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+    respuesta.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key');
+    if (solicitud.method === 'OPTIONS') {
+      return respuesta.sendStatus(204);
+    }
+    continuar();
+  });
+
   app.get('/health', (_solicitud, respuesta) => respuesta.json({ status: 'ok', storage: 'mysql' }));
   app.get('/openapi.json', (_solicitud, respuesta) => respuesta.json(especificacion));
   app.use('/api-docs', interfaz_swagger.serve, interfaz_swagger.setup(especificacion));

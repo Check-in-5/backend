@@ -9,6 +9,7 @@ services:
       DB_USER: ${DB_USER:-checkin_user}
       DB_PASSWORD: ${DB_PASSWORD:-checkin_password}
       DB_NAME: checkin_db
+      ENTRADAS_SERVICE_URL: ${ENTRADAS_SERVICE_URL:-http://entradas-service:3000}
     ports:
       - "${PORT:-3005}:3005"
     networks:

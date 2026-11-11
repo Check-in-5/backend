@@ -29,9 +29,20 @@ export async function crear_repositorio_mysql(configuracion = {}) {
       },
       async buscar_por_id(id) {
         const [fila_conjunto] = await base_dato.execute(
-          'SELECT id_entrada, id_evento, nombre_usuario FROM ticket WHERE id_entrada = ?', [id],
+          'SELECT id_entrada, id_evento, id_usuario, nombre_usuario FROM ticket WHERE id_entrada = ?', [id],
         );
         return fila_conjunto[0] ? { ...fila_conjunto[0] } : null;
+      },
+      async registrar_asistencia({ id_entrada, id_evento, id_usuario }) {
+        try {
+          await base_dato.execute(
+            'INSERT INTO registro_asistencia (id_entrada, id_evento, id_usuario) VALUES (?, ?, ?)',
+            [id_entrada, id_evento, id_usuario || 'usr-anon'],
+          );
+          return true;
+        } catch {
+          return false;
+        }
       },
       async cerrar() { await base_dato.end(); },
     };
