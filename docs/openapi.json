@@ -418,6 +418,39 @@
           }
         }
       }
+    },
+    "/api/checkin/eventos/{id_evento}/finalizar": {
+      "post": {
+        "summary": "Finalizar evento y emitir lote de asistencia",
+        "description": "Recopila todos los ingresos registrados para un evento específico y publica un evento masivo en RabbitMQ destinado al microservicio de Reseñas.",
+        "parameters": [
+          {
+            "name": "id_evento",
+            "in": "path",
+            "required": true,
+            "description": "Identificador único del evento",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lote emitido exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "mensaje": { "type": "string" },
+                    "total_notificados": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
