@@ -1,3 +1,4 @@
+import { autenticar_personal, autenticar_servicio } from './auth.js';
 import crear_express from 'express';
 import interfaz_swagger from 'swagger-ui-express';
 import { readFileSync as leer_archivo } from 'node:fs';
@@ -5,7 +6,7 @@ import { crear_servicio } from './service.js';
 import { error_api } from './errors.js';
 const especificacion = JSON.parse(leer_archivo(new URL('../docs/openapi.json', import.meta.url), 'utf8'));
 
-export function crear_app({ repositorio }) {
+export function crear_app({ repositorio, verificar_personal = autenticar_personal, verificar_servicio = autenticar_servicio }) {
   const app = crear_express();
   const servicio = crear_servicio(repositorio);
   app.disable('x-powered-by');
@@ -15,7 +16,7 @@ export function crear_app({ repositorio }) {
   app.use('/api', (_solicitud, respuesta, continuar) => { respuesta.set('Cache-Control', 'no-store'); continuar(); });
   app.use(crear_express.json({ limit: '16kb' }));
   
-  app.post('/api/checkin/tickets', async (solicitud, respuesta, continuar) => {
+  app.post('/api/checkin/tickets', verificar_servicio, async (solicitud, respuesta, continuar) => {
     try {
       await servicio.registrar(solicitud.body);
       respuesta.status(201).json({ mensaje: 'Ticket registrado exitosamente para control de acceso.' });
@@ -24,7 +25,7 @@ export function crear_app({ repositorio }) {
     }
   });
   
-  app.post('/api/checkin/validaciones', async (solicitud, respuesta, continuar) => {
+  app.post('/api/checkin/validaciones', verificar_personal, async (solicitud, respuesta, continuar) => {
     try {
       const resultado = await servicio.validar(solicitud.body);
       respuesta.json(resultado);
@@ -33,7 +34,7 @@ export function crear_app({ repositorio }) {
     }
   });
 
-  app.post('/api/checkin/eventos/:id_evento/finalizar', async (solicitud, respuesta, continuar) => {
+  app.post('/api/checkin/eventos/:id_evento/finalizar', verificar_servicio, async (solicitud, respuesta, continuar) => {
     try {
       const cantidad = await servicio.enviar_lote_resenas(solicitud.params.id_evento);
       respuesta.status(200).json({ 

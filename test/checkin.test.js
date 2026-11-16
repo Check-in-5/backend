@@ -11,7 +11,7 @@ const entrada = { id_entrada: 'tk-998877', id_evento: 'evt-77889', nombre_usuari
 const registro = { ...entrada, id_usuario: 'usr-42' };
 const lectura = { id_entrada: entrada.id_entrada, id_evento: entrada.id_evento };
 async function iniciar_servidor(contexto, repositorio = crear_repositorio(':memory:'), cerrar = true) {
-  const servidor = crear_app({ repositorio }).listen(0, '127.0.0.1');
+  const servidor = crear_app({ repositorio, verificar_personal: (_req, _res, next) => next(), verificar_servicio: (_req, _res, next) => next() }).listen(0, '127.0.0.1');
   await esperar_evento(servidor, 'listening');
   contexto.after(async () => {
     await new Promise(resolver => { servidor.close(resolver); servidor.closeAllConnections(); });
@@ -25,12 +25,12 @@ async function enviar_solicitud(url_base, ruta, cuerpo) {
   });
   return { status: respuesta.status, body: await respuesta.json() };
 }
-prueba('registra y valida sin Auth ni dependencias externas; repetir no consume', async contexto => {
+prueba('contrato de negocio: registra ingreso y rechaza uso repetido', async contexto => {
   const url_base = await iniciar_servidor(contexto);
   verificacion.equal((await enviar_solicitud(url_base, 'tickets', registro)).status, 201);
   const resultado = await enviar_solicitud(url_base, 'validaciones', lectura);
   verificacion.deepEqual(resultado, { status: 200, body: { valido: true, motivo: 'TICKET_FOUND', ticket: entrada } });
-  verificacion.deepEqual(await enviar_solicitud(url_base, 'validaciones', lectura), resultado);
+  verificacion.equal((await enviar_solicitud(url_base, 'validaciones', lectura)).body.motivo, 'TICKET_ALREADY_USED');
 });
 prueba('QR opcional acepta solo el mismo ID', async contexto => {
   const url_base = await iniciar_servidor(contexto);

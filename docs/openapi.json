@@ -3,7 +3,7 @@
   "info": {
     "title": "TicketU — Check-in",
     "version": "0.2.0",
-    "description": "Recepción y validación local. Sin autenticación para esta entrega. Valida existencia y evento; no comprueba anulaciones, horarios ni uso previo y no registra asistencia. Entradas debe enviar solamente tickets emitidos válidos."
+    "description": "Check-in main integrado con Auth. Validación con cookie jwt y rol STAFF; registro y finalización mediante x-api-key."
   },
   "servers": [
     {
@@ -113,6 +113,12 @@
               }
             }
           },
+          "401": {
+            "description": "Sesión inválida"
+          },
+          "403": {
+            "description": "Sin permiso"
+          },
           "409": {
             "description": "TICKET_ALREADY_EXISTS: el ID ya está registrado; no se modifica",
             "content": {
@@ -202,8 +208,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Auth no disponible o configuración incompleta"
           }
-        }
+        },
+        "security": [
+          {
+            "servicio": []
+          }
+        ]
       }
     },
     "/api/checkin/validaciones": {
@@ -356,6 +370,12 @@
               }
             }
           },
+          "401": {
+            "description": "Sesión inválida"
+          },
+          "403": {
+            "description": "Sin permiso"
+          },
           "413": {
             "description": "Cuerpo mayor que 16 KiB",
             "content": {
@@ -415,8 +435,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Auth no disponible o configuración incompleta"
           }
-        }
+        },
+        "security": [
+          {
+            "sesion": []
+          }
+        ]
       }
     },
     "/api/checkin/eventos/{id_evento}/finalizar": {
@@ -442,14 +470,46 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "mensaje": { "type": "string" },
-                    "total_notificados": { "type": "integer" }
+                    "mensaje": {
+                      "type": "string"
+                    },
+                    "total_notificados": {
+                      "type": "integer"
+                    }
                   }
                 }
               }
             }
+          },
+          "401": {
+            "description": "Sesión inválida"
+          },
+          "403": {
+            "description": "Sin permiso"
+          },
+          "503": {
+            "description": "Auth no disponible o configuración incompleta"
           }
-        }
+        },
+        "security": [
+          {
+            "servicio": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sesion": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "jwt"
+      },
+      "servicio": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key"
       }
     }
   }

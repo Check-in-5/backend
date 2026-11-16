@@ -1,3 +1,5 @@
+> Esta rama integra Auth: las validaciones requieren cookie de sesión y rol STAFF; registrar tickets y finalizar eventos requiere una clave entre servicios. Consulta [la guía de integración y arranque](docs/integracion-auth.md). Las instrucciones históricas sin autenticación que siguen corresponden a la entrega anterior.
+
 # TicketU — Microservicio Check-in
 
 Node.js >=22.13, Express y MySQL 8. Adaptado a la infraestructura compartida de

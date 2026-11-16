@@ -2,6 +2,12 @@ services:
   checkin-service:
     build: .
     environment:
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:?Configura AUTH_SERVICE_URL}
+      AUTH_INTERNAL_API_KEY: ${AUTH_INTERNAL_API_KEY:?Configura AUTH_INTERNAL_API_KEY}
+      CHECKIN_SERVICE_API_KEY: ${CHECKIN_SERVICE_API_KEY:?Configura CHECKIN_SERVICE_API_KEY}
+      CHECKIN_ALLOWED_ROLES: ${CHECKIN_ALLOWED_ROLES:-STAFF}
+      BROKER_URL: ${BROKER_URL:-}
+      EVENT_EXCHANGE: ${EVENT_EXCHANGE:-ticketu.events}
       HOST: 0.0.0.0
       PORT: 3005
       DB_HOST: checkin-db

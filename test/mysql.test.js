@@ -17,7 +17,7 @@ prueba('MySQL: persiste, rechaza duplicados y parametriza consultas', { skip: pr
     await repositorio.cerrar();
     repositorio = await crear_repositorio_mysql();
     verificacion.deepEqual(await repositorio.buscar_por_id(entrada.id_entrada), {
-      id_entrada: entrada.id_entrada, id_evento: entrada.id_evento, nombre_usuario: entrada.nombre_usuario,
+      id_entrada: entrada.id_entrada, id_evento: entrada.id_evento, id_usuario: entrada.id_usuario, nombre_usuario: entrada.nombre_usuario,
     });
     verificacion.equal(await repositorio.buscar_por_id("' OR 1=1 --"), null);
   } finally {
