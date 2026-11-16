@@ -32,18 +32,26 @@ export function crear_app({ repositorio }) {
       continuar(error);
     }
   });
-
-  app.post('/api/checkin/eventos/:id_evento/finalizar', async (solicitud, respuesta, continuar) => {
+  app.post('/api/checkin/asistencia', async (solicitud, respuesta, continuar) => {
     try {
-      const cantidad = await servicio.enviar_lote_resenas(solicitud.params.id_evento);
-      respuesta.status(200).json({ 
-        mensaje: 'Lote de asistencia emitido a RabbitMQ', 
-        total_notificados: cantidad 
-      });
+      const resultado = await servicio.consultar_asistencia(solicitud.body, solicitud.query);
+      respuesta.status(200).json(resultado);
     } catch (error) {
       continuar(error);
     }
   });
+
+  //app.post('/api/checkin/eventos/:id_evento/finalizar', async (solicitud, respuesta, continuar) => {
+    //try {
+      //const cantidad = await servicio.enviar_lote_resenas(solicitud.params.id_evento);
+      //respuesta.status(200).json({ 
+        //mensaje: 'Lote de asistencia emitido a RabbitMQ', 
+        //total_notificados: cantidad 
+     // });
+    //} catch (error) {
+      //continuar(error);
+    //}
+  //});
   
   app.use((_solicitud, _respuesta, continuar) => continuar(new error_api(404, 'ROUTE_NOT_FOUND', 'Ruta no encontrada.')));
   app.use((error, _solicitud, respuesta, _continuar) => {

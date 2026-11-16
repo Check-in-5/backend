@@ -165,14 +165,14 @@
       ]
     },
     {
-      "name": "Finalizar evento",
+      "name": "Consultar asistencia (Asiste)",
       "request": {
         "method": "POST",
-        "header": [],
-        "url": "{{baseUrl}}/api/checkin/eventos/evt-77889/finalizar",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/api/checkin/asistencia",
         "body": {
           "mode": "raw",
-          "raw": ""
+          "raw": "{\n  \"usuarioId\": \"usr-42\",\n  \"eventoId\": \"evt-77889\"\n}"
         }
       },
       "event": [
@@ -180,12 +180,32 @@
           "listen": "test",
           "script": {
             "type": "text/javascript",
-            "exec": [
-              "pm.test('Emitir lote', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().mensaje).to.eql('Lote de asistencia emitido a RabbitMQ'); });"
-            ]
+            "exec": ["pm.test('Asistencia confirmada', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().asistio).to.eql('true'); });"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consultar asistencia (Error 400)",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": "{{baseUrl}}/api/checkin/asistencia",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"usuarioId\": \"usr-42\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('Error por datos faltantes', () => { pm.response.to.have.status(400); });"]
           }
         }
       ]
     }
+    
   ]
 }

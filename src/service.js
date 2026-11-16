@@ -66,25 +66,37 @@ export function crear_servicio(repositorio) {
 
       return { valido: true, motivo: 'TICKET_FOUND', ticket: ticket_para_operador };
     },
-    async enviar_lote_resenas(id_evento) {
-      if (typeof id_evento !== 'string' || !id_evento.trim()) {
-        throw new error_api(400, 'INVALID_REQUEST', 'El id_evento es inválido.');
+    async consultar_asistencia(cuerpo, query) {
+      const eventoId = cuerpo?.eventoId || query?.eventoId;
+      const usuarioId = cuerpo?.usuarioId || query?.usuarioId;
+
+      if (!eventoId || !usuarioId || typeof eventoId !== 'string' || typeof usuarioId !== 'string') {
+        throw new error_api(400, 'INVALID_REQUEST', 'usuarioId o eventoId ausente o inválido');
       }
-      
-      const asistentes = await repositorio.obtener_asistentes(id_evento);
-      
-      if (asistentes.length === 0) return 0;
-      
-      const payload = {
-        id_evento: id_evento,
-        total_asistentes: asistentes.length,
-        asistentes: asistentes,
-        fecha_emision: new Date().toISOString()
-      };
-      
-      await publicar_evento('checkin.asistencia_final', payload);
-      
-      return asistentes.length;
+
+      const asiste = await repositorio.verificar_asistencia(eventoId, usuarioId);
+      return { asistio: asiste ? "true" : "false" };
     },
+    //por lotes
+    //async enviar_lote_resenas(id_evento) {
+      //if (typeof id_evento !== 'string' || !id_evento.trim()) {
+        //throw new error_api(400, 'INVALID_REQUEST', 'El id_evento es inválido.');
+      //}
+      
+      //const asistentes = await repositorio.obtener_asistentes(id_evento);
+      
+      //if (asistentes.length === 0) return 0;
+      
+      //const payload = {
+        //id_evento: id_evento,
+        //total_asistentes: asistentes.length,
+        //asistentes: asistentes,
+        //fecha_emision: new Date().toISOString()
+      //};
+      
+      //await publicar_evento('checkin.asistencia_final', payload);
+      
+      //return asistentes.length;
+    //},
   };
 }

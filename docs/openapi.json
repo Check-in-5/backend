@@ -419,6 +419,45 @@
         }
       }
     },
+    "/api/checkin/asistencia": {
+      "post": {
+        "summary": "Verificar asistencia de un usuario a un evento",
+        "description": "Confirma si existe un check-in registrado para habilitar el formulario de reseñas.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["usuarioId", "eventoId"],
+                "properties": {
+                  "usuarioId": { "type": "string", "example": "u-12345" },
+                  "eventoId": { "type": "string", "example": "e-98765" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Confirmación de asistencia",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "asistio": { "type": "string", "example": "true" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "usuarioId o eventoId ausente o inválido"
+          }
+        }
+      }
+    },
     "/api/checkin/eventos/{id_evento}/finalizar": {
       "post": {
         "summary": "Finalizar evento y emitir lote de asistencia",
