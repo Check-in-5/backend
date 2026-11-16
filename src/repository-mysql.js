@@ -27,6 +27,14 @@ export async function crear_repositorio_mysql(configuracion = {}) {
           throw error;
         }
       },
+      //para envio en lotes
+      //async verificar_asistencia(id_evento, id_usuario) {
+        //const [ingresos] = await base_dato.execute(
+        //  'SELECT id_asistencia FROM registro_asistencia WHERE id_evento = ? AND id_usuario = ?',
+        //  [id_evento, id_usuario]
+      //  );
+      //  return ingresos.length > 0;
+     // },
       async obtener_asistentes(id_evento) {
         const [asistentes] = await base_dato.execute(
           'SELECT id_usuario, id_entrada FROM registro_asistencia WHERE id_evento = ?',
